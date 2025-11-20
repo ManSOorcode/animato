@@ -30,7 +30,6 @@ const HourGlass = forwardRef<SVGSVGElement, HourGlassProps>(function HourGlass(
     const top = polyTopRef.current;
     const bottom = polyBottomRef.current;
 
-    // initial styles
     gsap.set(svg, {
       width: "100vw",
       height: "100vh",
@@ -99,20 +98,17 @@ const HourGlass = forwardRef<SVGSVGElement, HourGlassProps>(function HourGlass(
     tl.to(
       svg,
       {
-        // rotate: 400,
         rotateZ: 400,
         duration: 1.0,
-        // transformOrigin: "50% 50%",
+
         ease: "power2.inOut",
-        // shortRotation: true,
       },
       "-=0.3"
     );
 
     tl.add(() => {
-      // lock exact final rotateZ value as baseline
       gsap.set(svg, { rotateZ: gsap.getProperty(svg, "rotateZ") });
-      // optional ready flag for banner to wait on
+
       if (svg) svg.dataset.ready = "1";
     });
 

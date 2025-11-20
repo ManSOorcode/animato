@@ -12,13 +12,17 @@ export default function Banner() {
   const bannerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hourglassRef = useRef<SVGSVGElement | null>(null);
+  const allowScrollResetRef = useRef(false);
 
-  //  console.log(gsap.getProperty(hourglassRef.current, "rotateX"), "hourglass");
   useLayoutEffect(() => {
     const banner = bannerRef.current;
     const video = videoRef.current;
     const hourglass = hourglassRef.current;
     if (!video || !banner || !hourglass) return;
+
+    gsap.delayedCall(1.2, () => {
+      allowScrollResetRef.current = true;
+    });
 
     const initialTilt = { rotateX: 24, rotateY: 0, rotateZ: 0 };
 
@@ -28,26 +32,37 @@ export default function Banner() {
       rotateZ: gsap.getProperty(hourglass, "rotateZ") as number,
     };
 
-    // const initialHG = { rotateX: 0, rotateY: 0, rotateZ: 0 };
-
     gsap.delayedCall(1.02, () => {
       initialHG.rotateX = gsap.getProperty(hourglass, "rotateX") as number;
       initialHG.rotateY = gsap.getProperty(hourglass, "rotateY") as number;
       initialHG.rotateZ = gsap.getProperty(hourglass, "rotateZ") as number;
     });
 
-    // console.log(initialHG, "hourglass");
-
     gsap.set(video, {
       ...initialTilt,
     });
 
+    gsap.fromTo(
+      ["#rightText", "#leftText"],
+      {
+        y: 50,
+        opacity: 0,
+      },
+      {
+        y: 0,
+        opacity: 1,
+        duration: 1.2,
+        ease: "power3.out",
+        stagger: 0.2,
+        delay: 1.5,
+      }
+    );
+
     const onMouseMove = (e: MouseEvent) => {
-      // if (video.dataset.locked === "true") return;
       if (!hourglass?.dataset?.ready) return;
       const rect = video.getBoundingClientRect();
-      const x = e.clientX - rect.left; // mouse X inside video
-      const y = e.clientY - rect.top; // mouse Y inside video
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
@@ -64,10 +79,8 @@ export default function Banner() {
         ease: "power1.out",
       });
 
-      const deltaX = (x - centerX) / centerX; // -1 → +1
-      const deltaY = (y - centerY) / centerY; // -1 → +1
-
-      gsap.killTweensOf(hourglass, "rotateX,rotateY,rotateZ");
+      const deltaX = (x - centerX) / centerX;
+      const deltaY = (y - centerY) / centerY;
 
       gsap.to(hourglass, {
         rotateX: initialHG.rotateX + deltaY * 2,
@@ -114,43 +127,34 @@ export default function Banner() {
         scrub: true,
         pin: true,
         animation: tween,
-        // onUpdate: () => {
-        //   gsap.to(video, {
-        //     rotateX: 0,
-        //     rotateY: 0,
-        //     rotateZ: 0,
-        //     duration: 0.2,
-        //     // overwrite: "auto",
-        //   });
-
-        // gsap.to(hourglass, {
-        //   rotateX: 0,
-        //   rotateY: 0,
-        //   rotateZ: 0,
-        //   duration: 0.2,
-        //   overwrite: "auto",
-        // });
-        // },
-
-        // onEnter: () => {
-        //   video.dataset.locked = "true";
-        //   hourglass.dataset.locked = "true";
-        // },
-        // onLeaveBack: () => {
-        //   video.dataset.locked = "false";
-        //   hourglass.dataset.locked = "false";
-        // },
+        onUpdate: () => {
+          if (!allowScrollResetRef.current) return;
+          gsap.to(video, {
+            rotateX: 0,
+            rotateY: 0,
+            rotateZ: 0,
+            duration: 0.2,
+            overwrite: "auto",
+          });
+        },
+        onEnter: () => {
+          video.dataset.locked = "true";
+          hourglass.dataset.locked = "true";
+        },
+        onLeaveBack: () => {
+          video.dataset.locked = "false";
+          hourglass.dataset.locked = "false";
+        },
       });
-    }, bannerRef); // bind GSAP to this component
+    }, bannerRef);
 
-    return () => ctx.revert(); // cleanup happens automatically
+    return () => ctx.revert();
   }, []);
 
   return (
     <section
       ref={bannerRef}
       className=" relative w-full h-screen overflow-hidden bg-[#EAE3DC]"
-      //   className="relative w-full h-screen  bg-[#f7f1eb]"
     >
       <div className="absolute inset-0  pointer-events-none flex items-center justify-center">
         <HourGlass coverFraction={0.33} ref={hourglassRef} />
@@ -168,7 +172,6 @@ export default function Banner() {
           loop
           className="object-cover rounded-3xl"
           style={{
-            // width: "80vw",
             height: "80vh",
 
             transformStyle: "preserve-3d",
@@ -178,18 +181,13 @@ export default function Banner() {
       </div>
 
       <div className="absolute inset-0 flex justify-between items-center px-4 text-black">
-        {/* <h1 className="text-bold text-4xl flex-wrap">
-          Simple text1 writen here
-        </h1> */}
-
-        <div className="max-w-xs">
+        <div id="leftText" className="max-w-xs">
           <h1 className="font-bold text-4xl leading-tight">
             Step into <br /> the Spotlight
           </h1>
         </div>
-        {/* <h2 className="text-lg">Simple text writen here</h2> */}
 
-        <div className="max-w-sm ">
+        <div id="rightText" className="max-w-sm ">
           <p className="text-gray-700 text-lg leading-relaxed">
             We craft world-class spaces & events that create memories, initiate
             conversations and elevate ambitions.
