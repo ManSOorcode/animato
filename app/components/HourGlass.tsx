@@ -1,11 +1,27 @@
 "use client";
-import { useLayoutEffect, useRef } from "react";
+import { forwardRef, useRef, useLayoutEffect } from "react";
 import gsap from "gsap";
+interface HourGlassProps {
+  coverFraction?: number;
+}
 
-export default function HourGlass({ coverFraction = 0.33 }) {
-  const svgRef = useRef(null);
+const HourGlass = forwardRef<SVGSVGElement, HourGlassProps>(function HourGlass(
+  { coverFraction = 0.33 },
+  externalRef
+) {
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const polyTopRef = useRef(null);
   const polyBottomRef = useRef(null);
+
+  const setRefs = (node: SVGSVGElement | null) => {
+    svgRef.current = node;
+
+    if (typeof externalRef === "function") {
+      externalRef(node);
+    } else if (externalRef) {
+      externalRef.current = node;
+    }
+  };
 
   useLayoutEffect(() => {
     if (!svgRef.current) return;
@@ -13,15 +29,6 @@ export default function HourGlass({ coverFraction = 0.33 }) {
     const svg = svgRef.current;
     const top = polyTopRef.current;
     const bottom = polyBottomRef.current;
-
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-
-    const targetExtendX = Math.round((vw * coverFraction) / (vw / 200));
-
-    const extendedBottomLeftX = -Math.abs(targetExtendX); // negative to push left off-screen
-
-    const bottomPointsExtended = `${extendedBottomLeftX},200 200,200 100,100`;
 
     // initial styles
     gsap.set(svg, {
@@ -58,14 +65,14 @@ export default function HourGlass({ coverFraction = 0.33 }) {
     tl.to(
       svg,
       {
-        scaleY: 1.6,
+        scaleY: 2.12,
         duration: 0.9,
         ease: "power2.inOut",
       },
       "-=0.4"
     );
 
-    const topPointsExtended = `0,-150 200,-150 100,100`;
+    const topPointsExtended = `0,-250 200,-250 100,100`;
 
     tl.to(
       top,
@@ -76,6 +83,8 @@ export default function HourGlass({ coverFraction = 0.33 }) {
       },
       "-=0.6"
     );
+
+    const bottomPointsExtended = "-320,340 204,160 100,100";
 
     tl.to(
       bottom,
@@ -90,35 +99,22 @@ export default function HourGlass({ coverFraction = 0.33 }) {
     tl.to(
       svg,
       {
-        scaleX: 1.8,
-        duration: 0.8,
-        ease: "power2.inOut",
-      },
-      "-=0.8"
-    );
-
-    tl.to(
-      svg,
-      {
-        rotate: 240,
+        // rotate: 400,
+        rotateZ: 400,
         duration: 1.0,
+        // transformOrigin: "50% 50%",
         ease: "power2.inOut",
+        // shortRotation: true,
       },
       "-=0.3"
     );
 
-    tl.to(
-      svg,
-      {
-        scale: 1.02,
-        duration: 1.8,
-        yoyo: true,
-        repeat: -1,
-        ease: "sine.inOut",
-        opacity: 1,
-      },
-      "+=0.2"
-    );
+    tl.add(() => {
+      // lock exact final rotateZ value as baseline
+      gsap.set(svg, { rotateZ: gsap.getProperty(svg, "rotateZ") });
+      // optional ready flag for banner to wait on
+      if (svg) svg.dataset.ready = "1";
+    });
 
     return () => {
       tl.kill();
@@ -127,7 +123,7 @@ export default function HourGlass({ coverFraction = 0.33 }) {
   }, [coverFraction]);
   return (
     <svg
-      ref={svgRef}
+      ref={setRefs}
       viewBox="0 0 200 200"
       preserveAspectRatio="none"
       className="absolute inset-0 w-full h-full"
@@ -147,4 +143,6 @@ export default function HourGlass({ coverFraction = 0.33 }) {
       />
     </svg>
   );
-}
+});
+
+export default HourGlass;
